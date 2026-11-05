@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NEURAL X | Fast Survival Gate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,600;0,700;1,700&family=Orbitron:wght@400;600;700;800;900&family=Rajdhani:wght@500;600;700&family=Exo+2:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#030B13;
+  --panel:rgba(6,20,32,0.86);
+  --line:#22404b;
+  --lime:#b7ff00;
+  --lime-glow:rgba(183,255,0,0.35);
+  --orange:#ff7417;
+  --orange-glow:rgba(255,116,23,0.35);
+  --cyan:#00d9f5;
+  --muted:#8ea6ad;
+  --white:#f1f7f5;
+  --red:#ff4d6d;
+  --grad:linear-gradient(110deg,#b7ff00 0%,#d8ff35 48%,#ff7417 100%);
+  --grad-btn:linear-gradient(100deg,#99e600,#ff7926);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  color:var(--white);
+  font-family:'Rajdhani',sans-serif;
+  background:
+    radial-gradient(800px 520px at 10% -5%, rgba(0,217,245,.14), transparent 60%),
+    radial-gradient(800px 520px at 100% 12%, rgba(255,116,23,.14), transparent 60%),
+    radial-gradient(700px 500px at 50% 110%, rgba(183,255,0,.08), transparent 60%),
+    linear-gradient(rgba(0,217,245,.03) 1px, transparent 1px) 0 0/42px 42px,
+    linear-gradient(90deg, rgba(0,217,245,.03) 1px, transparent 1px) 0 0/42px 42px,
+    var(--bg);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* Background canvas and ambient glowing orbs */
+#bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.ocean{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.ocean i{position:absolute;border-radius:50%;filter:blur(75px);opacity:.45;will-change:transform}
+.ocean i:nth-child(1){width:520px;height:520px;left:-120px;top:-80px;background:rgba(0,217,245,.22);animation:drift1 24s ease-in-out infinite alternate}
+.ocean i:nth-child(2){width:600px;height:600px;right:-180px;top:25%;background:rgba(255,116,23,.2);animation:drift2 28s ease-in-out infinite alternate}
+.ocean i:nth-child(3){width:460px;height:460px;left:30%;bottom:-160px;background:rgba(183,255,0,.14);animation:drift3 26s ease-in-out infinite alternate}
+@keyframes drift1{to{transform:translate(180px,140px) scale(1.18)}}
+@keyframes drift2{to{transform:translate(-200px,-110px) scale(1.15)}}
+@keyframes drift3{to{transform:translate(170px,-140px) scale(1.22)}}
+
+.scan{
+  position:fixed;left:0;right:0;top:-3px;height:2px;z-index:1;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(0,217,245,.4),rgba(183,255,0,.5),rgba(255,116,23,.4),transparent);
+  animation:scan 9s linear infinite;
+}
+@keyframes scan{to{transform:translateY(105vh)}}
+
+.app-wrapper{position:relative;z-index:2}
+
+/* Header */
+header{
+  height:76px;
+  padding:0 clamp(16px,4vw,56px);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid rgba(183,255,0,0.22);
+  background:rgba(3,11,19,0.88);
+  backdrop-filter:blur(16px);
+  position:sticky;
+  top:0;
+  z-index:20;
+}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-svg{width:36px;height:36px;animation:float 5s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-5px)}}
+.logo{font:900 clamp(20px,2.4vw,28px) 'Orbitron',sans-serif;letter-spacing:-1px;color:#f3f7f5}
+.logo em{font-style:italic;color:var(--lime);display:inline-block;animation:pulseX 3s infinite}
+@keyframes pulseX{
+  0%,100%{text-shadow:0 0 14px var(--lime-glow)}
+  50%{text-shadow:0 0 28px var(--lime),0 0 45px var(--lime-glow)}
+}
+.tag{font:10px 'Chakra Petch',sans-serif;letter-spacing:3px;color:#a3bab5;border-left:1px solid #33545b;padding-left:14px;margin-left:4px}
+.tag b{color:var(--lime)}
+.headright{display:flex;gap:18px;align-items:center;font:11px 'Chakra Petch',sans-serif;letter-spacing:1.5px;color:#a1b8b6}
+.live-badge{display:inline-flex;align-items:center;color:var(--lime);font-weight:700}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--lime);box-shadow:0 0 12px var(--lime);margin-right:8px;animation:pulse 1.3s infinite}
+@keyframes pulse{50%{opacity:.3;box-shadow:0 0 3px var(--lime)}}
+.audio-toggle{
+  background:transparent;border:1px solid #2d4f58;color:var(--cyan);
+  padding:5px 9px;border-radius:4px;cursor:pointer;font:10px 'Chakra Petch',sans-serif;
+  letter-spacing:1px;transition:.2s;display:flex;align-items:center;gap:5px;
+}
+.audio-toggle:hover{border-color:var(--cyan);background:rgba(0,217,245,0.1)}
+
+main{max-width:1500px;margin:auto;padding:26px clamp(14px,3vw,38px) 45px}
+.kicker{font:11px 'Chakra Petch',sans-serif;letter-spacing:3px;color:var(--lime);display:flex;align-items:center;gap:8px}
+.kicker::before{content:"//";color:var(--orange)}
+h1{font:800 clamp(28px,4.2vw,50px) 'Orbitron',sans-serif;margin:8px 0 4px;letter-spacing:-1.5px}
+h1 span{color:var(--lime);text-shadow:0 0 24px rgba(183,255,0,0.45)}
+.subtitle{font-size:16px;color:#9bb0b5;margin:0 0 22px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.subtitle b{color:var(--orange)}
+
+/* Stats Bar */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.stat{
+  border:1px solid rgba(183,255,0,0.22);
+  background:linear-gradient(145deg,rgba(7,24,36,0.92),rgba(4,14,24,0.96));
+  padding:14px 18px;
+  position:relative;
+  clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,0 100%);
+  box-shadow:0 10px 30px rgba(0,0,0,.4);
+  transition:border-color .2s;
+}
+.stat:hover{border-color:var(--lime)}
+.stat label{font:10px 'Chakra Petch',sans-serif;letter-spacing:2px;color:#8ba3a7;display:block}
+.stat strong{display:block;font:700 28px 'Orbitron',sans-serif;margin-top:6px}
+.lime{color:var(--lime);text-shadow:0 0 16px rgba(183,255,0,.3)}
+.orange{color:var(--orange);text-shadow:0 0 16px rgba(255,116,23,.3)}
+.cyan{color:var(--cyan);text-shadow:0 0 16px rgba(0,217,245,.3)}
+
+/* Layout Grid */
+.layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(360px,.8fr);gap:18px}
+.panel{
+  border:1px solid rgba(34,64,75,0.9);
+  border-radius:6px;
+  background:var(--panel);
+  padding:22px;
+  position:relative;
+  box-shadow:0 12px 40px rgba(0,0,0,.45);
+  backdrop-filter:blur(10px);
+  transition:border-color .25s,box-shadow .25s;
+}
+.panel:hover{
+  border-color:rgba(183,255,0,0.4);
+  box-shadow:0 0 0 1px rgba(183,255,0,.15),0 12px 40px rgba(0,0,0,.5);
+}
+.panel::before{
+  content:"";position:absolute;left:-1px;top:-1px;width:24px;height:24px;
+  border-top:2px solid var(--lime);border-left:2px solid var(--lime);border-top-left-radius:6px;
+  transition:width .3s,height .3s;
+}
+.panel::after{
+  content:"";position:absolute;right:-1px;bottom:-1px;width:24px;height:24px;
+  border-bottom:2px solid var(--orange);border-right:2px solid var(--orange);border-bottom-right-radius:6px;
+  transition:width .3s,height .3s;
+}
+.panel:hover::before,.panel:hover::after{width:40px;height:40px}
+
+.panel-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:18px;
+  padding-bottom:12px;
+  border-bottom:1px solid rgba(34,64,75,.6);
+}
+.panel-title{
+  font:700 14px 'Orbitron',sans-serif;
+  letter-spacing:1.5px;
+  color:var(--white);
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.panel-title span{color:var(--lime)}
+.badge-hot{
+  font:9px 'Chakra Petch',sans-serif;
+  letter-spacing:1px;
+  padding:3px 8px;
+  border-radius:3px;
+  background:rgba(255,116,23,0.15);
+  border:1px solid rgba(255,116,23,0.4);
+  color:var(--orange);
+}
+
+/* Fast Search Area */
+.search-box-wrap{position:relative;margin-bottom:14px}
+.search-icon{
+  position:absolute;left:15px;top:50%;transform:translateY(-50%);
+  color:var(--lime);font-size:18px;pointer-events:none;
+}
+.search-input{
+  width:100%;
+  background:#04101c;
+  border:1px solid #2a4c58;
+  color:#fff;
+  padding:15px 45px 15px 44px;
+  border-radius:6px;
+  font:600 17px 'Rajdhani',sans-serif;
+  outline:none;
+  transition:border-color .2s,box-shadow .2s;
+}
+.search-input:focus{
+  border-color:var(--lime);
+  box-shadow:0 0 0 3px rgba(183,255,0,0.16),0 0 25px rgba(183,255,0,0.18);
+}
+.clear-search{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:#6d888e;font-size:18px;cursor:pointer;
+  padding:0;display:none;
+}
+.clear-search.show{display:block}
+.clear-search:hover{color:#fff}
+
+.search-hint{
+  display:flex;justify-content:space-between;align-items:center;
+  font:11px 'Chakra Petch',sans-serif;color:var(--muted);margin-bottom:14px;
+}
+.kbd{
+  background:#091d2c;border:1px solid #2d4f58;border-radius:3px;
+  padding:2px 6px;color:var(--lime);font-family:monospace;font-size:11px;
+}
+
+/* Filter controls */
+.filter-row{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.status-filters{display:flex;gap:8px}
+.filter-pill{
+  font:700 10px 'Chakra Petch',sans-serif;
+  letter-spacing:1px;
+  padding:7px 14px;
+  border-radius:4px;
+  border:1px solid #22404b;
+  background:#051320;
+  color:#9ab2b7;
+  cursor:pointer;
+  transition:.15s;
+}
+.filter-pill:hover{border-color:var(--lime);color:#fff}
+.filter-pill.active{
+  background:var(--lime);
+  color:#041018;
+  border-color:var(--lime);
+  box-shadow:0 0 14px var(--lime-glow);
+}
+
+.faction-chips{
+  display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;
+  scrollbar-width:thin;scrollbar-color:var(--orange) #061824;
+}
+.chip{
+  flex:none;
+  font:600 10px 'Orbitron',sans-serif;
+  padding:6px 11px;
+  border-radius:4px;
+  border:1px solid #1e3842;
+  background:#071622;
+  color:#8ba4a9;
+  cursor:pointer;
+  transition:.15s;
+  display:inline-flex;align-items:center;gap:6px;
+}
+.chip:hover{border-color:var(--cyan);color:#fff}
+.chip.active{
+  border-color:var(--cyan);background:rgba(0,217,245,0.15);
+  color:var(--cyan);box-shadow:0 0 12px rgba(0,217,245,0.25);
+}
+
+/* Survivor Fast List */
+.survivors-container{
+  display:flex;flex-direction:column;gap:8px;
+  max-height:560px;overflow-y:auto;padding-right:4px;
+  scrollbar-width:thin;scrollbar-color:var(--lime) #051420;
+}
+.survivor-card{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:14px;
+  padding:12px 16px;
+  background:#071826;
+  border:1px solid #1e3a45;
+  border-radius:6px;
+  transition:transform .15s,border-color .15s,box-shadow .15s,background .15s;
+}
+.survivor-card:hover{
+  border-color:rgba(183,255,0,0.5);
+  background:#0b2133;
+  transform:translateX(3px);
+  box-shadow:0 4px 18px rgba(0,0,0,0.3);
+}
+.survivor-card.is-arrived{
+  border-color:rgba(183,255,0,0.3);
+  background:linear-gradient(90deg,rgba(11,41,29,0.7),rgba(6,22,34,0.8));
+}
+.avatar{
+  width:42px;height:42px;border-radius:5px;
+  background:linear-gradient(135deg,#13323d,#091b24);
+  border:1px solid #29515d;
+  display:grid;place-items:center;
+  font:700 13px 'Orbitron',sans-serif;
+  color:var(--cyan);
+  flex:none;
+}
+.survivor-info{min-width:0}
+.survivor-topline{display:flex;align-items:center;gap:9px;margin-bottom:3px;flex-wrap:wrap}
+.survivor-name{
+  font:700 17px 'Rajdhani',sans-serif;
+  color:#fff;letter-spacing:.3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.team-tag{
+  font:600 9px 'Orbitron',sans-serif;
+  padding:3px 7px;border-radius:3px;
+  background:#0d2836;border:1px solid #2d5563;
+  color:var(--cyan);display:inline-flex;align-items:center;gap:4px;
+}
+.survivor-meta{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:10px}
+.survivor-id{font:10px 'Orbitron',sans-serif;color:#a4c1c7}
+.arrival-stamp{font:11px 'Chakra Petch',sans-serif;color:var(--lime)}
+
+/* Action Buttons: The "OK" Button */
+.card-actions{display:flex;align-items:center;gap:8px}
+.btn-ok{
+  position:relative;
+  overflow:hidden;
+  font:700 12px 'Chakra Petch',sans-serif;
+  letter-spacing:1px;
+  color:#06140d;
+  background:var(--lime);
+  border:none;
+  padding:9px 18px;
+  border-radius:4px;
+  cursor:pointer;
+  box-shadow:0 0 16px var(--lime-glow);
+  transition:transform .12s,box-shadow .2s,background .2s;
+  display:inline-flex;align-items:center;gap:6px;
+  white-space:nowrap;
+}
+.btn-ok:hover{
+  transform:scale(1.04);
+  box-shadow:0 0 25px rgba(183,255,0,0.6);
+  background:#caff1a;
+}
+.btn-ok::after{
+  content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.6),transparent);
+  transform:skewX(-20deg);animation:shine 3s ease-in-out infinite;
+}
+@keyframes shine{0%,50%{left:-60%} 100%{left:140%}}
+
+.btn-arrived{
+  font:700 11px 'Chakra Petch',sans-serif;
+  letter-spacing:1px;
+  color:var(--lime);
+  background:rgba(183,255,0,0.1);
+  border:1px solid rgba(183,255,0,0.5);
+  padding:8px 14px;
+  border-radius:4px;
+  display:inline-flex;align-items:center;gap:6px;
+  white-space:nowrap;
+}
+.btn-undo{
+  background:none;border:1px solid #3c545e;color:#8ba5ab;
+  padding:6px 10px;border-radius:4px;cursor:pointer;
+  font:10px 'Chakra Petch',sans-serif;transition:.15s;
+}
+.btn-undo:hover{border-color:var(--orange);color:var(--orange);background:rgba(255,116,23,0.1)}
+
+.empty-state{text-align:center;padding:45px 20px;color:var(--muted)}
+.empty-state h3{font:700 18px 'Orbitron',sans-serif;color:#fff;margin:0 0 8px}
+
+/* Scanner Dropdown Toggle */
+.qr-accordion{
+  margin-top:14px;
+  border-top:1px solid rgba(34,64,75,0.7);
+  padding-top:12px;
+}
+.qr-toggle-btn{
+  background:transparent;border:1px dashed #2d5563;color:#9ab5bb;
+  padding:9px 14px;border-radius:4px;font:600 11px 'Chakra Petch',sans-serif;
+  letter-spacing:1px;width:100%;cursor:pointer;transition:.2s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.qr-toggle-btn:hover{border-color:var(--lime);color:var(--lime);background:rgba(183,255,0,0.04)}
+.qr-camera-box{
+  display:none;margin-top:12px;background:#020910;border:1px solid var(--lime);
+  padding:12px;border-radius:6px;text-align:center;
+}
+.qr-camera-box.open{display:block}
+
+/* Right Column: Animated Island & Teams */
+.right-column{display:flex;flex-direction:column;gap:18px}
+
+/* Island Signal HUD */
+.island-hud-panel{overflow:hidden}
+.island-stage{
+  position:relative;
+  width:100%;
+  height:280px;
+  margin:0 auto;
+  display:grid;
+  place-items:center;
+}
+.hud{
+  position:absolute;left:50%;top:50%;width:340px;height:340px;
+  transform:translate(-50%,-50%);z-index:0;pointer-events:none;opacity:.92;
+}
+.hud svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.hud circle{fill:none;transform-box:fill-box;transform-origin:center}
+.hud .r1{stroke:rgba(183,255,0,.68);stroke-width:1.2;stroke-dasharray:2 10;animation:spin 70s linear infinite}
+.hud .r2{stroke:rgba(255,116,23,.68);stroke-width:1.4;stroke-dasharray:70 26 10 26;animation:spin 46s linear infinite reverse}
+.hud .r3{stroke:rgba(0,217,245,.32);stroke-width:1}
+.hud .r4{stroke:rgba(183,255,0,.85);stroke-width:2.2;stroke-dasharray:46 700;stroke-linecap:round;animation:spin 12s linear infinite}
+.hud .sweep{
+  position:absolute;inset:9%;border-radius:50%;
+  background:conic-gradient(from 0deg,transparent 0 290deg,rgba(0,217,245,.2) 350deg,rgba(0,217,245,0) 360deg);
+  -webkit-mask:radial-gradient(circle,transparent 0 22%,#000 23%);
+  mask:radial-gradient(circle,transparent 0 22%,#000 23%);
+  animation:spin 8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.isl-wrap{
+  position:relative;z-index:1;width:210px;height:210px;
+  filter:drop-shadow(0 15px 30px rgba(0,0,0,.6));
+  animation:bob 8s ease-in-out infinite;
+}
+@keyframes bob{50%{transform:translateY(-8px) rotate(.6deg)}}
+.isl{width:100%;height:100%;overflow:visible}
+.isl .shallow{transform-box:fill-box;transform-origin:center;animation:breathe 6s ease-in-out infinite}
+.isl .shallow2{transform-box:fill-box;transform-origin:center;animation:breathe 4.5s ease-in-out infinite reverse}
+@keyframes breathe{50%{transform:scale(1.05);opacity:.85}}
+.isl .foam{stroke-dasharray:16 12;animation:foam 7s linear infinite}
+@keyframes foam{to{stroke-dashoffset:-112}}
+.isl .ta,.isl .tb,.isl .tc{transform-box:fill-box;transform-origin:center}
+.isl .ta{animation:sway 5.2s ease-in-out infinite}
+.isl .tb{animation:sway 6.4s -2s ease-in-out infinite}
+.isl .tc{animation:sway 4.6s -3.4s ease-in-out infinite}
+@keyframes sway{50%{transform:scale(1.07) translateX(.6px)}}
+.isl .ping{transform-box:fill-box;transform-origin:center;animation:ping 2.8s ease-out infinite}
+.isl .p2{animation-delay:1.4s}
+@keyframes ping{0%{transform:scale(1);opacity:.9} 100%{transform:scale(6.5);opacity:0}}
+
+.island-meta-bar{
+  display:flex;justify-content:space-between;align-items:center;
+  font:10px 'Orbitron',sans-serif;color:var(--cyan);letter-spacing:1.5px;
+  padding-top:10px;border-top:1px solid rgba(0,217,245,0.2);
+}
+
+/* Team Activation Matrix */
+.team-matrix{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.team-node{
+  background:#061622;
+  border:1px solid #1c3642;
+  border-radius:5px;
+  padding:10px 12px;
+  position:relative;
+  transition:border-color .2s,background .2s;
+}
+.team-node.full{
+  border-color:var(--lime);
+  background:linear-gradient(135deg,rgba(183,255,0,0.12),#081d2c);
+  box-shadow:0 0 15px rgba(183,255,0,0.15);
+}
+.team-node-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.team-node-title{
+  font:700 11px 'Orbitron',sans-serif;
+  letter-spacing:.8px;
+  display:flex;align-items:center;gap:6px;
+  color:#fff;
+}
+.team-node-count{font:700 11px 'Chakra Petch',sans-serif;color:var(--lime)}
+.team-progress{
+  height:4px;background:#152b36;border-radius:2px;overflow:hidden;
+}
+.team-fill{
+  height:100%;width:0%;
+  background:var(--grad);
+  border-radius:2px;
+  transition:width .4s ease;
+  box-shadow:0 0 8px rgba(183,255,0,.4);
+}
+
+/* Toast Notification */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translate(-50%,20px);
+  background:linear-gradient(110deg,#09271c,#051722);
+  border:1px solid var(--lime);
+  box-shadow:0 0 30px rgba(183,255,0,0.35);
+  color:#fff;
+  padding:12px 24px;
+  border-radius:6px;
+  font:700 12px 'Chakra Petch',sans-serif;
+  letter-spacing:1px;
+  opacity:0;pointer-events:none;
+  transition:all .28s cubic-bezier(.2,.8,.2,1);
+  z-index:99;
+  display:flex;align-items:center;gap:10px;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast .icon{color:var(--lime);font-size:18px}
+
+/* Reset / Demo Action */
+.demo-bar{
+  margin-top:28px;
+  display:flex;justify-content:space-between;align-items:center;
+  font:10px 'Chakra Petch',sans-serif;color:var(--muted);letter-spacing:1px;
+}
+.btn-reset{
+  background:none;border:1px solid #304a54;color:#859da1;
+  padding:6px 12px;border-radius:4px;cursor:pointer;
+  font:10px 'Chakra Petch',sans-serif;transition:.15s;
+}
+.btn-reset:hover{border-color:var(--red);color:var(--red)}
+
+footer{
+  text-align:center;color:#6b858c;
+  font:10px 'Chakra Petch',sans-serif;letter-spacing:3px;
+  margin-top:40px;
+}
+footer b{color:var(--lime)}
+
+@media(max-width:980px){
+  .layout{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:600px){
+  header{height:auto;padding:12px 16px;flex-direction:column;gap:8px}
+  .headright{font-size:10px;gap:12px}
+  .tag{display:none}
+  .stats{grid-template-columns:1fr 1fr}
+  .team-matrix{grid-template-columns:1fr}
+  .survivor-card{grid-template-columns:auto 1fr;gap:10px}
+  .card-actions{grid-column:1/-1;justify-content:flex-end}
+}
+</style>
+</head>
+<body>
+
+<div class="ocean" aria-hidden="true"><i></i><i></i><i></i></div>
+<canvas id="bg" aria-hidden="true"></canvas>
+<div class="scan" aria-hidden="true"></div>
+
+<div class="app-wrapper">
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <svg class="brand-svg" viewBox="17 17 40 40" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="dsGrad" gradientUnits="userSpaceOnUse" x1="23" y1="49" x2="52" y2="26">
+            <stop offset="0" stop-color="#B7FF00"/>
+            <stop offset=".5" stop-color="#FF9A24"/>
+            <stop offset="1" stop-color="#FF7417"/>
+          </linearGradient>
+          <filter id="dsGlow" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="0.9" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <g filter="url(#dsGlow)" fill="none" stroke="url(#dsGrad)" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M38.7 28.25 L47.3 30" stroke-width="1.3"/>
+          <path d="M36.05 30.25 L34.95 43.75" stroke-width="1.3"/>
+          <path d="M32.25 46.4 L27 46.65" stroke-width="1.3"/>
+          <circle cx="36.25" cy="27.75" r="2.4" stroke-width="1.6"/>
+          <circle cx="49.75" cy="30.5" r="2.3" stroke-width="1.6"/>
+          <circle cx="34.75" cy="46.25" r="2.4" stroke-width="1.6"/>
+          <circle cx="24.5" cy="46.75" r="2.3" stroke-width="1.6"/>
+        </g>
+      </svg>
+      <div class="logo">NEURAL<em>X</em></div>
+      <div class="tag">FAST SURVIVAL GATE &nbsp;|&nbsp; <b>DESK EDITION</b></div>
+    </div>
+    <div class="headright">
+      <span class="live-badge"><i class="dot"></i>LIVE DESK</span>
+      <span id="clock">00:00:00</span>
+      <button class="audio-toggle" id="audioToggle" title="Toggle audio feedback">🔊 AUDIO ON</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="kicker">ISLAND ACCESS CONTROL · HIGH-SPEED CHECK-IN PROTOCOL</div>
+    <h1>SURVIVAL <span>GATEWAY</span></h1>
+    <p class="subtitle">
+      <span>INSTANT NAME SEARCH & ONE-CLICK ARRIVAL CONFIRMATION.</span>
+      <b>NO DELAYS · DIRECT VALIDATION</b>
+    </p>
+
+    <!-- Top Stats -->
+    <section class="stats">
+      <div class="stat">
+        <label>TOTAL SURVIVORS</label>
+        <strong id="totalCount">50</strong>
+      </div>
+      <div class="stat">
+        <label>CONFIRMED ARRIVED</label>
+        <strong class="lime" id="arrivedCount">0</strong>
+      </div>
+      <div class="stat">
+        <label>REMAINING PENDING</label>
+        <strong class="orange" id="pendingCount">50</strong>
+      </div>
+      <div class="stat">
+        <label>FULL TEAMS READY</label>
+        <strong class="cyan" id="fullTeamsCount">0 / 10</strong>
+      </div>
+    </section>
+
+    <!-- Main 2-Column High-Speed Layout -->
+    <div class="layout">
+      
+      <!-- LEFT: Streamlined Name Search & Instant "OK" Check-In -->
+      <section class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span>01 /</span> SURVIVOR NAME SEARCH & VERIFY
+          </div>
+          <span class="badge-hot">⚡ ONE-CLICK OK CHECK-IN</span>
+        </div>
+
+        <!-- Real-Time Search Bar -->
+        <div class="search-box-wrap">
+          <div class="search-icon">🔍</div>
+          <input 
+            type="text" 
+            class="search-input" 
+            id="searchInput" 
+            placeholder="Type survivor name e.g. Maya, Omar, Amara, Jonas... (Press Enter to validate)"
+            autocomplete="off"
+            autofocus
+          >
+          <button class="clear-search" id="clearSearch">✕</button>
+        </div>
+
+        <div class="search-hint">
+          <span>Search matches survivor name, ID (e.g. NX-0012), or faction</span>
+          <span>Tip: Press <span class="kbd">Enter</span> to check-in first match</span>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="filter-row">
+          <div class="status-filters">
+            <button class="filter-pill active" data-status="ALL">ALL (50)</button>
+            <button class="filter-pill" data-status="PENDING">PENDING (50)</button>
+            <button class="filter-pill" data-status="ARRIVED">ARRIVED (0)</button>
+          </div>
+
+          <div class="faction-chips" id="factionChips">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Survivors Interactive List -->
+        <div class="survivors-container" id="survivorsList">
+          <!-- Dynamically populated cards with 'OK' buttons -->
+        </div>
+
+        <!-- Optional Collapsible QR Scanner for fallback -->
+        <div class="qr-accordion">
+          <button class="qr-toggle-btn" id="qrToggleBtn">
+            <span>📷</span> SCAN QR CODE VIA CAMERA / SCANNER
+          </button>
+          <div class="qr-camera-box" id="qrCameraBox">
+            <div id="reader" style="max-width:320px;margin:auto;"></div>
+            <p style="font-size:12px;color:#85a0a7;margin:8px 0;">Point the survivor QR badge toward the lens.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: Animated Island HUD & Faction Teams Status -->
+      <div class="right-column">
+        
+        <!-- Island Signal with neuralxformulaire animations -->
+        <section class="panel island-hud-panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span>02 /</span> ISLAND RADAR SIGNAL
+            </div>
+            <span class="muted" style="font-size:11px;font-family:'Chakra Petch'">SECTOR 01 · ALGIERS HQ</span>
+          </div>
+
+          <div class="island-stage">
+            <!-- Rotating HUD Circles & Radar Sweep -->
+            <div class="hud" aria-hidden="true">
+              <div class="sweep"></div>
+              <svg viewBox="0 0 400 400">
+                <circle class="r1" cx="200" cy="200" r="196"/>
+                <circle class="r2" cx="200" cy="200" r="168"/>
+                <circle class="r3" cx="200" cy="200" r="138"/>
+                <circle class="r4" cx="200" cy="200" r="182"/>
+              </svg>
+            </div>
+
+            <!-- Animated Island SVG -->
+            <div class="isl-wrap">
+              <svg class="isl" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <filter id="iBlur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="9"/></filter>
+                  <filter id="iGlow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3"/></filter>
+                  <clipPath id="iLand">
+                    <path d="M268.1 187.6 Q271.9 191.3 275.0 195.7 Q278.1 200.0 280.3 204.8 Q282.5 209.7 284.0 214.6 Q285.4 219.6 286.5 224.7 Q287.6 229.8 288.6 235.0 Q289.5 240.2 290.1 245.3 Q290.6 250.4 290.3 255.1 Q290.0 259.8 288.7 263.7 Q287.3 267.6 285.2 270.5 Q283.0 273.5 280.6 275.8 Q278.2 278.2 276.4 280.8 Q274.5 283.4 273.5 286.8 Q272.5 290.1 272.0 294.3 Q271.6 298.5 271.0 302.6 Q270.4 306.7 269.0 309.8 Q267.6 312.9 265.3 314.2 Q262.9 315.5 259.9 315.4 Q257.0 315.2 254.0 314.5 Q251.1 313.9 248.6 314.0 Q246.2 314.1 244.4 315.5 Q242.5 316.9 241.0 319.3 Q239.5 321.6 237.8 324.0 Q236.2 326.3 234.2 327.7 Q232.2 329.0 229.9 329.2 Q227.6 329.5 225.2 329.0 Q222.7 328.6 220.4 328.2 Q218.0 327.9 215.7 327.9 Q213.4 327.8 211.0 327.7 Q208.6 327.6 206.1 326.5 Q203.7 325.4 201.2 322.7 Q198.8 320.0 196.5 316.1 Q194.3 312.3 192.2 308.3 Q190.1 304.4 188.1 301.8 Q186.0 299.2 183.7 298.5 Q181.3 297.9 178.4 298.9 Q175.5 299.9 172.0 301.3 Q168.6 302.6 165.0 303.0 Q161.4 303.4 158.0 302.1 Q154.6 300.7 151.7 297.8 Q148.8 294.8 146.3 290.8 Q143.8 286.8 141.6 282.5 Q139.3 278.1 137.1 273.7 Q134.9 269.3 132.8 264.7 Q130.8 260.1 129.2 255.0 Q127.7 250.0 127.0 244.6 Q126.4 239.2 126.5 233.8 Q126.6 228.3 127.1 223.2 Q127.5 218.1 127.8 213.4 Q128.0 208.7 127.7 204.3 Q127.4 200.0 126.8 195.7 Q126.1 191.4 125.8 187.1 Q125.4 182.8 125.9 178.9 Q126.4 175.0 128.0 171.7 Q129.6 168.4 131.7 165.8 Q133.8 163.2 135.6 160.8 Q137.3 158.4 138.0 155.5 Q138.7 152.6 138.1 148.6 Q137.5 144.7 136.1 139.7 Q134.8 134.8 133.4 129.4 Q132.0 124.0 131.3 118.8 Q130.6 113.7 130.7 109.3 Q130.8 104.8 131.5 100.9 Q132.1 97.1 133.0 93.3 Q133.9 89.6 134.8 85.9 Q135.8 82.1 137.1 78.7 Q138.3 75.3 140.1 72.9 Q142.0 70.6 144.5 69.9 Q147.1 69.2 150.0 70.0 Q153.0 70.7 155.9 71.9 Q158.8 73.0 161.2 73.1 Q163.7 73.1 165.6 71.3 Q167.5 69.5 169.1 66.0 Q170.7 62.5 172.5 58.7 Q174.3 54.8 176.6 52.2 Q178.8 49.6 181.5 49.3 Q184.2 48.9 187.1 50.6 Q190.0 52.3 192.9 55.0 Q195.8 57.8 198.6 60.5 Q201.4 63.2 204.1 65.3 Q206.8 67.4 209.5 69.4 Q212.2 71.3 214.8 73.8 Q217.4 76.2 219.8 79.8 Q222.3 83.3 224.4 87.8 Q226.5 92.2 228.3 96.9 Q230.1 101.5 231.9 105.7 Q233.7 109.9 235.5 113.4 Q237.4 116.9 239.4 120.2 Q241.3 123.5 243.0 127.2 Q244.7 130.9 245.8 135.3 Q246.8 139.7 247.2 144.6 Q247.5 149.4 247.6 154.1 Q247.6 158.7 248.0 162.6 Q248.4 166.5 249.9 169.6 Q251.4 172.6 254.2 175.3 Q257.0 178.0 260.7 181.0 Q264.3 184.0 268.1 187.6Z"/>
+                  </clipPath>
+                </defs>
+                <path class="shallow" d="M287.9 184.0 Q292.7 188.8 296.7 194.4 Q300.8 200.0 303.6 206.3 Q306.4 212.5 308.3 218.9 Q310.2 225.3 311.7 231.9 Q313.1 238.5 314.3 245.1 Q315.5 251.8 316.2 258.4 Q316.9 265.1 316.5 271.1 Q316.2 277.2 314.4 282.2 Q312.7 287.2 309.9 291.0 Q307.1 294.8 304.0 297.9 Q300.9 300.9 298.5 304.3 Q296.2 307.6 294.9 312.0 Q293.5 316.3 293.0 321.7 Q292.4 327.0 291.6 332.4 Q290.8 337.7 289.0 341.7 Q287.3 345.7 284.2 347.4 Q281.2 349.1 277.3 348.9 Q273.5 348.6 269.7 347.8 Q265.9 347.0 262.7 347.1 Q259.6 347.2 257.2 349.0 Q254.9 350.9 252.9 353.9 Q250.9 357.0 248.8 360.0 Q246.7 363.0 244.1 364.7 Q241.5 366.5 238.5 366.8 Q235.6 367.0 232.5 366.5 Q229.3 365.9 226.3 365.4 Q223.2 365.0 220.2 365.0 Q217.2 365.0 214.2 364.8 Q211.1 364.6 207.9 363.2 Q204.8 361.7 201.6 358.3 Q198.5 354.9 195.5 349.9 Q192.6 344.9 189.9 339.8 Q187.3 334.7 184.6 331.3 Q182.0 327.9 178.9 327.1 Q175.9 326.3 172.1 327.6 Q168.4 328.9 163.9 330.7 Q159.5 332.4 154.8 332.9 Q150.1 333.5 145.8 331.7 Q141.4 330.0 137.7 326.1 Q133.9 322.3 130.7 317.1 Q127.5 312.0 124.6 306.4 Q121.7 300.8 118.8 295.1 Q115.9 289.5 113.3 283.5 Q110.7 277.5 108.7 271.0 Q106.7 264.5 105.9 257.5 Q105.0 250.6 105.1 243.6 Q105.3 236.5 105.9 229.9 Q106.5 223.3 106.8 217.3 Q107.1 211.3 106.8 205.6 Q106.4 200.0 105.5 194.4 Q104.7 188.8 104.2 183.4 Q103.7 177.9 104.4 172.8 Q105.1 167.7 107.1 163.5 Q109.1 159.2 111.9 155.8 Q114.6 152.5 116.9 149.4 Q119.2 146.3 120.0 142.5 Q120.9 138.8 120.1 133.7 Q119.4 128.6 117.6 122.2 Q115.8 115.8 114.1 108.9 Q112.3 101.9 111.4 95.3 Q110.5 88.7 110.6 82.9 Q110.7 77.2 111.6 72.2 Q112.4 67.2 113.5 62.4 Q114.7 57.6 115.9 52.7 Q117.2 47.9 118.8 43.5 Q120.4 39.0 122.8 36.0 Q125.2 33.0 128.4 32.1 Q131.7 31.2 135.5 32.2 Q139.3 33.2 143.1 34.7 Q146.8 36.1 150.0 36.2 Q153.1 36.3 155.6 34.0 Q158.0 31.6 160.1 27.1 Q162.2 22.6 164.5 17.6 Q166.9 12.7 169.8 9.3 Q172.7 6.0 176.2 5.5 Q179.6 5.0 183.4 7.2 Q187.2 9.4 190.9 13.0 Q194.6 16.5 198.2 20.0 Q201.8 23.4 205.2 26.2 Q208.7 28.9 212.2 31.4 Q215.7 33.9 219.1 37.1 Q222.5 40.3 225.6 44.9 Q228.7 49.5 231.4 55.2 Q234.1 60.9 236.5 67.0 Q238.9 73.0 241.1 78.3 Q243.4 83.7 245.9 88.3 Q248.3 92.8 250.8 97.1 Q253.3 101.3 255.5 106.1 Q257.7 110.8 259.1 116.5 Q260.4 122.2 260.9 128.5 Q261.3 134.7 261.4 140.7 Q261.4 146.7 261.9 151.8 Q262.5 156.8 264.4 160.7 Q266.3 164.7 269.9 168.2 Q273.5 171.6 278.3 175.5 Q283.0 179.3 287.9 184.0Z" fill="#FF7417" opacity=".35" filter="url(#iBlur)"/>
+                <path class="shallow2" d="M279.8 185.5 Q284.2 189.8 287.9 194.9 Q291.5 200.0 294.1 205.7 Q296.7 211.3 298.4 217.2 Q300.1 223.0 301.4 229.0 Q302.7 234.9 303.8 241.0 Q304.9 247.1 305.5 253.1 Q306.2 259.1 305.9 264.6 Q305.5 270.1 303.9 274.7 Q302.4 279.2 299.8 282.7 Q297.3 286.1 294.5 288.9 Q291.7 291.7 289.5 294.7 Q287.3 297.7 286.2 301.7 Q285.0 305.7 284.4 310.5 Q283.9 315.4 283.2 320.3 Q282.5 325.1 280.9 328.7 Q279.3 332.3 276.5 333.9 Q273.7 335.4 270.2 335.2 Q266.8 335.0 263.3 334.3 Q259.8 333.5 257.0 333.6 Q254.1 333.7 252.0 335.4 Q249.8 337.0 248.0 339.8 Q246.2 342.6 244.3 345.3 Q242.4 348.0 240.0 349.6 Q237.7 351.2 235.0 351.5 Q232.3 351.7 229.5 351.2 Q226.7 350.7 223.9 350.3 Q221.1 349.9 218.4 349.8 Q215.6 349.8 212.9 349.7 Q210.1 349.5 207.2 348.2 Q204.3 346.9 201.5 343.8 Q198.6 340.7 195.9 336.1 Q193.3 331.6 190.9 327.0 Q188.4 322.4 186.0 319.3 Q183.6 316.2 180.9 315.5 Q178.1 314.7 174.7 315.9 Q171.3 317.1 167.2 318.7 Q163.2 320.3 159.0 320.8 Q154.7 321.2 150.7 319.7 Q146.8 318.1 143.4 314.6 Q140.0 311.1 137.1 306.4 Q134.2 301.7 131.5 296.7 Q128.9 291.6 126.3 286.4 Q123.7 281.3 121.3 275.8 Q118.9 270.4 117.1 264.5 Q115.3 258.6 114.5 252.3 Q113.7 245.9 113.8 239.6 Q114.0 233.2 114.5 227.2 Q115.1 221.2 115.4 215.7 Q115.7 210.2 115.3 205.1 Q115.0 200.0 114.2 194.9 Q113.4 189.9 113.0 184.9 Q112.6 179.9 113.2 175.3 Q113.8 170.7 115.6 166.8 Q117.5 163.0 119.9 159.9 Q122.4 156.8 124.5 154.0 Q126.6 151.2 127.4 147.8 Q128.2 144.4 127.5 139.8 Q126.8 135.2 125.2 129.4 Q123.5 123.6 121.9 117.2 Q120.3 110.9 119.5 104.9 Q118.7 98.9 118.8 93.7 Q118.9 88.5 119.7 83.9 Q120.5 79.4 121.5 75.0 Q122.5 70.6 123.6 66.2 Q124.8 61.8 126.2 57.8 Q127.7 53.8 129.9 51.1 Q132.0 48.3 135.0 47.5 Q137.9 46.7 141.4 47.6 Q144.9 48.5 148.3 49.8 Q151.7 51.1 154.6 51.2 Q157.4 51.3 159.6 49.2 Q161.9 47.0 163.8 42.9 Q165.7 38.8 167.8 34.3 Q169.9 29.8 172.5 26.8 Q175.2 23.8 178.3 23.3 Q181.5 22.9 184.9 24.9 Q188.3 26.9 191.7 30.1 Q195.1 33.3 198.3 36.5 Q201.6 39.6 204.8 42.1 Q207.9 44.6 211.1 46.9 Q214.3 49.1 217.3 52.1 Q220.4 55.0 223.3 59.1 Q226.1 63.3 228.5 68.5 Q231.0 73.7 233.1 79.1 Q235.3 84.6 237.4 89.5 Q239.4 94.4 241.7 98.5 Q243.9 102.7 246.2 106.5 Q248.4 110.4 250.4 114.7 Q252.4 119.0 253.6 124.2 Q254.9 129.3 255.3 135.0 Q255.7 140.7 255.7 146.2 Q255.8 151.6 256.3 156.2 Q256.8 160.7 258.5 164.3 Q260.3 167.9 263.5 171.1 Q266.8 174.2 271.1 177.7 Q275.4 181.2 279.8 185.5Z" fill="#00D9F5" opacity=".5" filter="url(#iGlow)"/>
+                <path class="foam" d="M276.2 186.2 Q280.4 190.3 283.8 195.1 Q287.3 200.0 289.8 205.4 Q292.2 210.8 293.9 216.4 Q295.5 222.0 296.8 227.7 Q298.0 233.3 299.1 239.1 Q300.1 244.9 300.7 250.6 Q301.3 256.4 301.0 261.6 Q300.7 266.9 299.2 271.3 Q297.7 275.6 295.2 278.9 Q292.8 282.1 290.1 284.8 Q287.5 287.5 285.4 290.4 Q283.3 293.2 282.2 297.0 Q281.1 300.8 280.6 305.5 Q280.0 310.1 279.4 314.7 Q278.7 319.4 277.2 322.8 Q275.6 326.2 273.0 327.7 Q270.4 329.2 267.0 329.0 Q263.7 328.8 260.4 328.1 Q257.1 327.4 254.4 327.5 Q251.6 327.6 249.6 329.2 Q247.5 330.7 245.8 333.4 Q244.1 336.0 242.3 338.6 Q240.4 341.2 238.2 342.8 Q236.0 344.3 233.4 344.5 Q230.8 344.8 228.1 344.3 Q225.4 343.8 222.8 343.4 Q220.1 343.0 217.5 343.0 Q214.9 343.0 212.3 342.8 Q209.6 342.7 206.9 341.4 Q204.1 340.2 201.4 337.2 Q198.7 334.2 196.1 329.9 Q193.6 325.5 191.3 321.2 Q189.0 316.8 186.7 313.8 Q184.4 310.9 181.7 310.2 Q179.1 309.5 175.8 310.6 Q172.6 311.7 168.7 313.2 Q164.9 314.8 160.8 315.2 Q156.8 315.7 153.0 314.2 Q149.2 312.7 146.0 309.3 Q142.7 306.0 140.0 301.5 Q137.2 297.1 134.7 292.2 Q132.1 287.4 129.6 282.5 Q127.2 277.5 124.9 272.4 Q122.6 267.2 120.9 261.5 Q119.2 255.9 118.4 249.9 Q117.7 243.8 117.8 237.7 Q117.9 231.7 118.4 225.9 Q119.0 220.2 119.2 215.0 Q119.5 209.8 119.2 204.9 Q118.9 200.0 118.1 195.1 Q117.4 190.3 117.0 185.6 Q116.6 180.8 117.2 176.4 Q117.7 172.0 119.5 168.3 Q121.2 164.7 123.6 161.7 Q126.0 158.8 128.0 156.1 Q129.9 153.4 130.7 150.2 Q131.4 146.9 130.8 142.5 Q130.1 138.1 128.6 132.6 Q127.0 127.1 125.5 121.0 Q124.0 115.0 123.2 109.2 Q122.4 103.5 122.5 98.5 Q122.6 93.6 123.4 89.2 Q124.1 84.9 125.1 80.7 Q126.0 76.6 127.1 72.4 Q128.2 68.2 129.6 64.3 Q131.0 60.5 133.1 57.9 Q135.1 55.3 138.0 54.5 Q140.8 53.7 144.1 54.6 Q147.4 55.4 150.7 56.7 Q153.9 58.0 156.7 58.1 Q159.4 58.1 161.5 56.1 Q163.6 54.0 165.4 50.1 Q167.3 46.2 169.3 41.9 Q171.3 37.6 173.8 34.7 Q176.3 31.8 179.3 31.4 Q182.4 31.0 185.6 32.9 Q188.9 34.8 192.1 37.9 Q195.3 41.0 198.4 44.0 Q201.5 47.0 204.5 49.4 Q207.6 51.8 210.6 53.9 Q213.6 56.1 216.5 58.8 Q219.5 61.6 222.2 65.6 Q224.9 69.5 227.2 74.5 Q229.6 79.5 231.6 84.7 Q233.7 89.9 235.7 94.6 Q237.6 99.2 239.8 103.2 Q241.9 107.1 244.0 110.8 Q246.2 114.5 248.1 118.6 Q250.0 122.7 251.2 127.6 Q252.4 132.6 252.8 138.0 Q253.2 143.4 253.2 148.6 Q253.2 153.8 253.7 158.2 Q254.1 162.5 255.8 166.0 Q257.5 169.4 260.6 172.4 Q263.7 175.4 267.8 178.7 Q271.9 182.1 276.2 186.2Z" fill="none" stroke="#d9fff6" stroke-width="2" opacity=".8"/>
+                <path d="M268.1 187.6 Q271.9 191.3 275.0 195.7 Q278.1 200.0 280.3 204.8 Q282.5 209.7 284.0 214.6 Q285.4 219.6 286.5 224.7 Q287.6 229.8 288.6 235.0 Q289.5 240.2 290.1 245.3 Q290.6 250.4 290.3 255.1 Q290.0 259.8 288.7 263.7 Q287.3 267.6 285.2 270.5 Q283.0 273.5 280.6 275.8 Q278.2 278.2 276.4 280.8 Q274.5 283.4 273.5 286.8 Q272.5 290.1 272.0 294.3 Q271.6 298.5 271.0 302.6 Q270.4 306.7 269.0 309.8 Q267.6 312.9 265.3 314.2 Q262.9 315.5 259.9 315.4 Q257.0 315.2 254.0 314.5 Q251.1 313.9 248.6 314.0 Q246.2 314.1 244.4 315.5 Q242.5 316.9 241.0 319.3 Q239.5 321.6 237.8 324.0 Q236.2 326.3 234.2 327.7 Q232.2 329.0 229.9 329.2 Q227.6 329.5 225.2 329.0 Q222.7 328.6 220.4 328.2 Q218.0 327.9 215.7 327.9 Q213.4 327.8 211.0 327.7 Q208.6 327.6 206.1 326.5 Q203.7 325.4 201.2 322.7 Q198.8 320.0 196.5 316.1 Q194.3 312.3 192.2 308.3 Q190.1 304.4 188.1 301.8 Q186.0 299.2 183.7 298.5 Q181.3 297.9 178.4 298.9 Q175.5 299.9 172.0 301.3 Q168.6 302.6 165.0 303.0 Q161.4 303.4 158.0 302.1 Q154.6 300.7 151.7 297.8 Q148.8 294.8 146.3 290.8 Q143.8 286.8 141.6 282.5 Q139.3 278.1 137.1 273.7 Q134.9 269.3 132.8 264.7 Q130.8 260.1 129.2 255.0 Q127.7 250.0 127.0 244.6 Q126.4 239.2 126.5 233.8 Q126.6 228.3 127.1 223.2 Q127.5 218.1 127.8 213.4 Q128.0 208.7 127.7 204.3 Q127.4 200.0 126.8 195.7 Q126.1 191.4 125.8 187.1 Q125.4 182.8 125.9 178.9 Q126.4 175.0 128.0 171.7 Q129.6 168.4 131.7 165.8 Q133.8 163.2 135.6 160.8 Q137.3 158.4 138.0 155.5 Q138.7 152.6 138.1 148.6 Q137.5 144.7 136.1 139.7 Q134.8 134.8 133.4 129.4 Q132.0 124.0 131.3 118.8 Q130.6 113.7 130.7 109.3 Q130.8 104.8 131.5 100.9 Q132.1 97.1 133.0 93.3 Q133.9 89.6 134.8 85.9 Q135.8 82.1 137.1 78.7 Q138.3 75.3 140.1 72.9 Q142.0 70.6 144.5 69.9 Q147.1 69.2 150.0 70.0 Q153.0 70.7 155.9 71.9 Q158.8 73.0 161.2 73.1 Q163.7 73.1 165.6 71.3 Q167.5 69.5 169.1 66.0 Q170.7 62.5 172.5 58.7 Q174.3 54.8 176.6 52.2 Q178.8 49.6 181.5 49.3 Q184.2 48.9 187.1 50.6 Q190.0 52.3 192.9 55.0 Q195.8 57.8 198.6 60.5 Q201.4 63.2 204.1 65.3 Q206.8 67.4 209.5 69.4 Q212.2 71.3 214.8 73.8 Q217.4 76.2 219.8 79.8 Q222.3 83.3 224.4 87.8 Q226.5 92.2 228.3 96.9 Q230.1 101.5 231.9 105.7 Q233.7 109.9 235.5 113.4 Q237.4 116.9 239.4 120.2 Q241.3 123.5 243.0 127.2 Q244.7 130.9 245.8 135.3 Q246.8 139.7 247.2 144.6 Q247.5 149.4 247.6 154.1 Q247.6 158.7 248.0 162.6 Q248.4 166.5 249.9 169.6 Q251.4 172.6 254.2 175.3 Q257.0 178.0 260.7 181.0 Q264.3 184.0 268.1 187.6Z" fill="#1b6b39"/>
+                
+                <!-- Radar Ping Beacon -->
+                <circle class="ping" cx="210" cy="216" r="6" fill="none" stroke="#b7ff00" stroke-width="2"/>
+                <circle class="ping p2" cx="210" cy="216" r="6" fill="none" stroke="#00d9f5" stroke-width="2"/>
+                <circle cx="210" cy="216" r="3" fill="#ff7417"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="island-meta-bar">
+            <span>ISLAND RADAR ACTIVE</span>
+            <span>BEACON: 36.65°N, 2.76°E</span>
+          </div>
+        </section>
+
+        <!-- 10 Factions Activation Matrix -->
+        <section class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span>03 /</span> TEAM ACTIVATION MATRIX
+            </div>
+            <span class="muted" style="font-size:11px;font-family:'Chakra Petch'">10 FACTIONS (5 SURVIVORS EA.)</span>
+          </div>
+
+          <div class="team-matrix" id="teamMatrix">
+            <!-- Dynamically populated teams -->
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- Quick Demo Reset Bar -->
+    <div class="demo-bar">
+      <span>NEURAL X 2026 SURVIVAL PROTOCOL</span>
+      <button class="btn-reset" id="resetDemoBtn">RESET CHECK-IN DATA</button>
+    </div>
+
+    <footer>
+      THE ISLAND HAS A PATTERN. <b>BREAK IT.</b> &nbsp;·&nbsp; DATASPACE · ENSSEA-KOLEA
+    </footer>
+  </main>
+</div>
+
+<!-- High-Tech Toast Notification -->
+<div class="toast" id="toast">
+  <span class="icon">✓</span>
+  <span id="toastMsg">SURVIVOR CHECKED IN</span>
+</div>
+
+<script>
+// --- Data Source: 10 Factions x 5 Survivors = 50 Profiles ---
+const factionsData = [
+  ['Kestrel', '🦅', ['Dr. Amara Nwosu', 'Maya Chen', 'Omar Benali', 'Sofia Reyes', 'Ethan Cole']],
+  ['Ember', '🔥', ['Jonas Hartmann', 'Lina Haddad', 'Adam Brooks', 'Nora Ali', 'Leo Fischer']],
+  ['Tidewater', '🌊', ['Priya Raman', 'Youssef Karim', 'Mia Laurent', 'Noah Williams', 'Aya Mansour']],
+  ['Basalt', '⛰️', ['Mateo Quiroga', 'Sara Kim', 'Ilyes Amrani', 'Elena Petrova', 'Lucas Martin']],
+  ['Lumen', '✦', ['Ingrid Solheim', 'Amine Saidi', 'Chloe Martin', 'Rayan Boudiaf', 'Oliver Reed']],
+  ['Cinder', '⚙️', ['Kenji Arai', 'Yasmine Belkacem', 'Hugo Silva', 'Lara Novak', 'Samir Ouali']],
+  ['Static', 'ϟ', ['Leila Haddad', 'Mehdi Zeroual', 'Emma Clarke', 'Nabil Ferhat', 'Theo Laurent']],
+  ['Moss', '🌿', ['Tomasz Wrona', 'Ines Rahmani', 'Milan Kovac', 'Jade Wilson', 'Karim Bensaid']],
+  ['Driftwood', '🧭', ['Zainab Okafor', 'Amir Toumi', 'Grace Chen', 'Bilal Haddad', 'Eva Moreau']],
+  ['Lantern', '🏮', ['Felix Moreau', 'Lydia James', 'Anis Kaci', 'Mariam Saad', 'Daniel Costa']]
+];
+
+const rolesList = ['Botanist', 'Pilot', 'Paramedic', 'Surveyor', 'Chemist', 'Engineer', 'Radio Operator', 'Cook', 'Teacher', 'Photographer'];
+
+// Build survivor objects
+let people = [];
+factionsData.forEach((f, ti) => {
+  f[2].forEach((name, mi) => {
+    people.push({
+      id: `NX-${String(ti * 5 + mi + 1).padStart(4, '0')}`,
+      name: name,
+      team: f[0],
+      teamIcon: f[1],
+      teamIndex: ti,
+      role: mi === 0 ? rolesList[ti] : 'Survivor',
+      arrived: false,
+      arrivalTime: null
+    });
+  });
+});
+
+// App State
+let currentStatusFilter = 'ALL';
+let currentFactionFilter = 'ALL';
+let searchQuery = '';
+let soundEnabled = true;
+let scannerInstance = null;
+
+// DOM references
+const $ = id => document.getElementById(id);
+const searchInput = $('searchInput');
+const clearSearch = $('clearSearch');
+const survivorsList = $('survivorsList');
+const factionChips = $('factionChips');
+const totalCount = $('totalCount');
+const arrivedCount = $('arrivedCount');
+const pendingCount = $('pendingCount');
+const fullTeamsCount = $('fullTeamsCount');
+const teamMatrix = $('teamMatrix');
+const toastEl = $('toast');
+const toastMsg = $('toastMsg');
+const audioToggle = $('audioToggle');
+const qrToggleBtn = $('qrToggleBtn');
+const qrCameraBox = $('qrCameraBox');
+const resetDemoBtn = $('resetDemoBtn');
+
+// Audio Synthesizer for High-Tech Confirmation Chimes (Web Audio API)
+const audioCtx = (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined')
+  ? new (window.AudioContext || window.webkitAudioContext)()
+  : null;
+
+function playSound(type) {
+  if (!soundEnabled || !audioCtx) return;
+  try {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    if (type === 'ok') {
+      // Futuristic positive two-tone chime
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(587.33, now); // D5
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.12); // A5
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+      osc.start(now);
+      osc.stop(now + 0.28);
+    } else if (type === 'undo') {
+      // Subtle down pitch
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.exponentialRampToValueAtTime(320, now + 0.15);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+      osc.start(now);
+      osc.stop(now + 0.18);
+    }
+  } catch (e) {}
+}
+
+function timeNow() {
+  return new Date().toLocaleTimeString('en-GB', { hour12: false });
+}
+
+function getInitials(name) {
+  return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+}
+
+// Toast helper
+let toastTimer = null;
+function showToast(text, isOk = true) {
+  if (toastTimer) clearTimeout(toastTimer);
+  toastEl.querySelector('.icon').textContent = isOk ? '✓' : '↩';
+  toastMsg.textContent = text;
+  toastEl.classList.add('show');
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2400);
+}
+
+// --- Check-in Actions ---
+function checkInSurvivor(id) {
+  const p = people.find(x => x.id === id);
+  if (!p) return;
+  if (!p.arrived) {
+    p.arrived = true;
+    p.arrivalTime = timeNow();
+    playSound('ok');
+    showToast(`${p.name.toUpperCase()} CHECKED IN!`);
+    updateAll();
+  }
+}
+
+function undoCheckIn(id) {
+  const p = people.find(x => x.id === id);
+  if (!p || !p.arrived) return;
+  p.arrived = false;
+  p.arrivalTime = null;
+  playSound('undo');
+  showToast(`CHECK-IN UNDONE FOR ${p.name.toUpperCase()}`, false);
+  updateAll();
+}
+
+// Update Stats & Team Matrix
+function updateStatsAndTeams() {
+  const total = people.length;
+  const arrived = people.filter(p => p.arrived).length;
+  const pending = total - arrived;
+  
+  let fullCount = 0;
+  teamMatrix.innerHTML = factionsData.map(f => {
+    const teamMembers = people.filter(p => p.team === f[0]);
+    const arrCount = teamMembers.filter(p => p.arrived).length;
+    const isFull = arrCount === 5;
+    if (isFull) fullCount++;
+    const percent = arrCount * 20;
+
+    return `
+      <div class="team-node ${isFull ? 'full' : ''}">
+        <div class="team-node-top">
+          <span class="team-node-title"><span>${f[1]}</span> ${f[0].toUpperCase()}</span>
+          <span class="team-node-count">${arrCount}/5</span>
+        </div>
+        <div class="team-progress">
+          <div class="team-fill" style="width:${percent}%"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  totalCount.textContent = total;
+  arrivedCount.textContent = arrived;
+  pendingCount.textContent = pending;
+  fullTeamsCount.textContent = `${fullCount} / 10`;
+
+  // Update filter pill counts
+  document.querySelector('[data-status="ALL"]').textContent = `ALL (${total})`;
+  document.querySelector('[data-status="PENDING"]').textContent = `PENDING (${pending})`;
+  document.querySelector('[data-status="ARRIVED"]').textContent = `ARRIVED (${arrived})`;
+}
+
+// Render Faction Filter Chips
+function renderFactionChips() {
+  const list = ['ALL', ...factionsData.map(f => f[0])];
+  factionChips.innerHTML = list.map(fName => {
+    const isActive = currentFactionFilter === fName;
+    const count = fName === 'ALL' ? people.length : people.filter(p => p.team === fName).length;
+    const arrCount = fName === 'ALL' ? people.filter(p => p.arrived).length : people.filter(p => p.team === fName && p.arrived).length;
+    return `
+      <button class="chip ${isActive ? 'active' : ''}" data-faction="${fName}">
+        ${fName.toUpperCase()} <span style="font-size:9px;opacity:0.75">(${arrCount}/${count})</span>
+      </button>
+    `;
+  }).join('');
+
+  factionChips.querySelectorAll('.chip').forEach(btn => {
+    btn.onclick = () => {
+      currentFactionFilter = btn.dataset.faction;
+      renderFactionChips();
+      renderSurvivors();
+    };
+  });
+}
+
+// Render Survivor Cards
+function renderSurvivors() {
+  const q = searchQuery.trim().toLowerCase();
+  
+  const filtered = people.filter(p => {
+    // Status filter
+    if (currentStatusFilter === 'PENDING' && p.arrived) return false;
+    if (currentStatusFilter === 'ARRIVED' && !p.arrived) return false;
+    // Faction filter
+    if (currentFactionFilter !== 'ALL' && p.team !== currentFactionFilter) return false;
+    // Search query
+    if (q) {
+      const matchName = p.name.toLowerCase().includes(q);
+      const matchId = p.id.toLowerCase().includes(q);
+      const matchTeam = p.team.toLowerCase().includes(q);
+      if (!matchName && !matchId && !matchTeam) return false;
+    }
+    return true;
+  });
+
+  if (!filtered.length) {
+    survivorsList.innerHTML = `
+      <div class="empty-state">
+        <h3>NO SURVIVOR FOUND</h3>
+        <p>No matching record for "${searchQuery}". Check the spelling or ID.</p>
+      </div>
+    `;
+    return;
+  }
+
+  survivorsList.innerHTML = filtered.map(p => `
+    <div class="survivor-card ${p.arrived ? 'is-arrived' : ''}" data-id="${p.id}">
+      <div class="avatar">${getInitials(p.name)}</div>
+      <div class="survivor-info">
+        <div class="survivor-topline">
+          <span class="survivor-name">${p.name}</span>
+          <span class="team-tag"><span>${p.teamIcon}</span> ${p.team}</span>
+        </div>
+        <div class="survivor-meta">
+          <span class="survivor-id">${p.id}</span>
+          <span>·</span>
+          <span>${p.role}</span>
+          ${p.arrived ? `<span class="arrival-stamp">✓ ARRIVED ${p.arrivalTime}</span>` : ''}
+        </div>
+      </div>
+      <div class="card-actions">
+        ${p.arrived 
+          ? `<span class="btn-arrived">✓ ARRIVED</span>
+             <button class="btn-undo" onclick="undoCheckIn('${p.id}')">UNDO</button>`
+          : `<button class="btn-ok" onclick="checkInSurvivor('${p.id}')">✓ OK · CHECK IN</button>`
+        }
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateAll() {
+  updateStatsAndTeams();
+  renderFactionChips();
+  renderSurvivors();
+}
+
+// Search input events
+searchInput.addEventListener('input', e => {
+  searchQuery = e.target.value;
+  clearSearch.classList.toggle('show', searchQuery.length > 0);
+  renderSurvivors();
+});
+
+clearSearch.addEventListener('click', () => {
+  searchInput.value = '';
+  searchQuery = '';
+  clearSearch.classList.remove('show');
+  renderSurvivors();
+  searchInput.focus();
+});
+
+// Fast Check-In on ENTER key in Search Bar
+searchInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const firstCard = survivorsList.querySelector('.survivor-card:not(.is-arrived)');
+    if (firstCard) {
+      const id = firstCard.dataset.id;
+      checkInSurvivor(id);
+      searchInput.select();
+    }
+  }
+});
+
+// Status Filter Tabs
+document.querySelectorAll('.filter-pill').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentStatusFilter = btn.dataset.status;
+    renderSurvivors();
+  };
+});
+
+// Audio Feedback Toggle
+audioToggle.addEventListener('click', () => {
+  soundEnabled = !soundEnabled;
+  audioToggle.textContent = soundEnabled ? '🔊 AUDIO ON' : '🔇 AUDIO OFF';
+  audioToggle.style.color = soundEnabled ? 'var(--cyan)' : 'var(--muted)';
+});
+
+// Reset Demo
+resetDemoBtn.addEventListener('click', () => {
+  if (!confirm('Reset all check-in status data for this demo?')) return;
+  people.forEach(p => {
+    p.arrived = false;
+    p.arrivalTime = null;
+  });
+  searchQuery = '';
+  searchInput.value = '';
+  clearSearch.classList.remove('show');
+  updateAll();
+  showToast('ALL DATA RESET', false);
+});
+
+// Quick shortcut '/' to focus search
+window.addEventListener('keydown', e => {
+  if (e.key === '/' && document.activeElement !== searchInput) {
+    e.preventDefault();
+    searchInput.focus();
+  }
+});
+
+// Clock in Algiers time
+function updateClock() {
+  $('clock').textContent = timeNow();
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// --- QR Camera Scanner (HTML5-QRCode) ---
+qrToggleBtn.addEventListener('click', async () => {
+  const isBoxOpen = qrCameraBox.classList.contains('open');
+  if (isBoxOpen) {
+    if (scannerInstance) {
+      try { await scannerInstance.stop(); scannerInstance.clear(); } catch(e){}
+      scannerInstance = null;
+    }
+    qrCameraBox.classList.remove('open');
+    qrToggleBtn.innerHTML = '<span>📷</span> SCAN QR CODE VIA CAMERA / SCANNER';
+  } else {
+    qrCameraBox.classList.add('open');
+    qrToggleBtn.innerHTML = '<span>✕</span> CLOSE CAMERA SCANNER';
+    startCamera();
+  }
+});
+
+async function startCamera() {
+  try {
+    if (!window.Html5Qrcode) {
+      const s = document.createElement('script');
+      s.src = 'https://unpkg.com/html5-qrcode';
+      document.head.appendChild(s);
+      await new Promise((res, rej) => { s.onload = res; s.onerror = rej; });
+    }
+    scannerInstance = new Html5Qrcode('reader');
+    await scannerInstance.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 220, height: 220 } },
+      decoded => {
+        const clean = decoded.trim();
+        const p = people.find(x => x.id.toLowerCase() === clean.toLowerCase() || x.name.toLowerCase() === clean.toLowerCase());
+        if (p) {
+          checkInSurvivor(p.id);
+        } else {
+          showToast(`UNKNOWN CODE: ${clean}`, false);
+        }
+      },
+      () => {}
+    );
+  } catch (err) {
+    showToast('CAMERA PERMISSION DENIED OR UNAVAILABLE', false);
+  }
+}
+
+// --- Particle Background Network Animation (neuralxformulaire Canvas) ---
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const c = document.getElementById('bg');
+  if (!c) return;
+  const x = c.getContext('2d');
+  let w, h, dpr, pts = [], mx = -999, my = -999, running = true;
+
+  function size(){
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = window.innerWidth;
+    h = window.innerHeight;
+    c.width = w * dpr;
+    c.height = h * dpr;
+    x.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const n = Math.round(Math.min(75, w * h / 22000));
+    pts = [];
+    for (let i = 0; i < n; i++) {
+      pts.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.45,
+        vy: (Math.random() - 0.5) * 0.45,
+        r: Math.random() * 1.8 + 0.8,
+        orange: Math.random() < 0.35
+      });
+    }
+  }
+
+  function frame(){
+    if (!running) return;
+    x.clearRect(0, 0, w, h);
+    for (let i = 0; i < pts.length; i++){
+      const p = pts[i];
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < -10) p.x = w + 10; if (p.x > w + 10) p.x = -10;
+      if (p.y < -10) p.y = h + 10; if (p.y > h + 10) p.y = -10;
+
+      x.beginPath();
+      x.arc(p.x, p.y, p.r, 0, 6.283);
+      x.fillStyle = p.orange ? 'rgba(255,116,23,0.85)' : 'rgba(183,255,0,0.85)';
+      x.fill();
+
+      for (let j = i + 1; j < pts.length; j++){
+        const q = pts[j];
+        const dx = p.x - q.x, dy = p.y - q.y;
+        const d = dx * dx + dy * dy;
+        if (d < 16000) {
+          x.strokeStyle = 'rgba(183,255,0,' + (0.2 * (1 - d / 16000)) + ')';
+          x.lineWidth = 1;
+          x.beginPath();
+          x.moveTo(p.x, p.y);
+          x.lineTo(q.x, q.y);
+          x.stroke();
+        }
+      }
+
+      const mdx = p.x - mx, mdy = p.y - my;
+      const md = mdx * mdx + mdy * mdy;
+      if (md < 28000) {
+        x.strokeStyle = 'rgba(255,116,23,' + (0.45 * (1 - md / 28000)) + ')';
+        x.lineWidth = 1.2;
+        x.beginPath();
+        x.moveTo(p.x, p.y);
+        x.lineTo(mx, my);
+        x.stroke();
+        p.x += (mdx > 0 ? 1 : -1) * 0.12;
+        p.y += (mdy > 0 ? 1 : -1) * 0.12;
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  size();
+  window.addEventListener('resize', size);
+  window.addEventListener('pointermove', e => { mx = e.clientX; my = e.clientY; });
+  window.addEventListener('pointerleave', () => { mx = my = -999; });
+  document.addEventListener('visibilitychange', () => {
+    running = !document.hidden;
+    if (running && !reduce) requestAnimationFrame(frame);
+  });
+  if (reduce) { running = true; frame(); running = false; } else { requestAnimationFrame(frame); }
+})();
+
+// Initial Render
+updateAll();
+</script>
+</body>
+</html>
